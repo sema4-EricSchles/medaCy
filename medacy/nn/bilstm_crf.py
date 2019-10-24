@@ -56,6 +56,10 @@ class BiLstmCrf(nn.Module):
         lstm_input_size = vector_size + CHARACTER_HIDDEN_DIM*2
         self.lstm = nn.LSTM(lstm_input_size, HIDDEN_DIM, bidirectional=True)
 
+        # Setup dropout layer to randomly zero elements from lstm output before
+        # being input into Linear Layer
+        self.dropout = nn.Dropout(p=0.5)
+
         # The linear layer that maps from hidden state space to tag space
         linear_input_size = HIDDEN_DIM*2 + other_features
         self.hidden2tag = nn.Linear(linear_input_size, self.tagset_size)
@@ -112,7 +116,9 @@ class BiLstmCrf(nn.Module):
         lstm_out = lstm_out.view(len(sentence), HIDDEN_DIM*2)
         lstm_out = torch.cat((lstm_out, other_features), 1)
 
-        lstm_features = self.hidden2tag(lstm_out)
+        dropout = self.dropout(lstm_out)
+
+        lstm_features = self.hidden2tag(dropout)
 
         return lstm_features
 
